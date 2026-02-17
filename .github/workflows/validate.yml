@@ -1,0 +1,57 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        template:
+          - aws/ecs-fargate
+          - aws/lambda-api
+          - aws/rds-postgres
+          - gcp/cloud-run
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Format
+        run: terraform fmt -check -recursive
+        working-directory: ${{ matrix.template }}
+
+      - name: Terraform Init
+        run: terraform init -backend=false
+        working-directory: ${{ matrix.template }}
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: ${{ matrix.template }}
+
+  kubernetes:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Kustomize
+        uses: imranismail/setup-kustomize@v2
+
+      - name: Validate base
+        run: kustomize build k8s/base | kubectl apply --dry-run=client -f -
+
+      - name: Validate overlays
+        run: |
+          for overlay in k8s/overlays/*/; do
+            echo "Validating $overlay"
+            kustomize build "$overlay" | kubectl apply --dry-run=client -f -
+          done
