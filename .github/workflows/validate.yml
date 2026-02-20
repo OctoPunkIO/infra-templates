@@ -15,6 +15,10 @@ jobs:
           - aws/ecs-fargate
           - aws/lambda-api
           - aws/rds-postgres
+          - azure/app-service-sql
+          - azure/aks-cluster
+          - azure/container-apps
+          - azure/functions-cosmosdb
           - gcp/cloud-run
 
     steps:
